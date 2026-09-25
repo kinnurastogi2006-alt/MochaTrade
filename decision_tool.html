@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MochaTrade — Infra Strategy Console</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sidebar-bg:#1B120C; --sidebar-bg-alt:#241A12; --sidebar-text:#E8DCC8; --sidebar-text-dim:#A68F72;
+    --accent:#BE7C3C; --accent-soft:#F0DAB8;
+    --bg-main:#F6F1E7; --bg-card:#FFFDF9; --text-primary:#251A10; --text-secondary:#6B5B46; --border:#E3D8C4;
+    --build:#2F6B4A; --build-soft:#E3EFE6;
+    --hybrid:#B4791F; --hybrid-soft:#F5E7CC;
+    --partner:#33587A; --partner-soft:#E1E9EF;
+  }
+  html{scroll-behavior:smooth;}
+  *{font-family:'Plus Jakarta Sans',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  body{background:var(--bg-main); color:var(--text-primary);}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  .navlink{transition:background .12s ease;}
+  .navlink:hover{background:var(--sidebar-bg-alt);}
+  .rate-btn{
+    width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);cursor:pointer;transition:all .12s ease;
+  }
+  .rate-btn:hover:not(.locked){border-color:var(--accent);color:var(--text-primary);}
+  .rate-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .rate-btn.locked{background:var(--hybrid-soft);border-color:var(--hybrid);color:var(--hybrid);cursor:not-allowed;opacity:.9;}
+  .rate-btn.locked.active{background:var(--hybrid);color:#fff;}
+  table{border-collapse:separate;border-spacing:0;}
+  [data-lucide]{flex-shrink:0;}
+</style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+  <aside class="w-full md:w-64 md:min-h-screen flex flex-col justify-between p-6" style="background:var(--sidebar-bg)">
+    <div>
+      <div class="flex items-center gap-2 text-white">
+        <i data-lucide="coffee" class="w-6 h-6" style="color:var(--accent)"></i>
+        <div>
+          <div class="font-extrabold text-lg leading-none">MochaTrade</div>
+          <div class="text-[11px] mt-0.5" style="color:var(--sidebar-text-dim)">Infra Strategy Console</div>
+        </div>
+      </div>
+      <nav class="mt-6 md:mt-10 flex md:flex-col gap-1 overflow-x-auto pb-1 md:pb-0">
+        <a href="#overview" class="navlink flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap" style="color:var(--sidebar-text)"><i data-lucide="gauge" class="w-4 h-4"></i>Overview</a>
+        <a href="#macro" class="navlink flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap" style="color:var(--sidebar-text)"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i>Macro Constraints</a>
+        <a href="#matrix" class="navlink flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap" style="color:var(--sidebar-text)"><i data-lucide="grid-3x3" class="w-4 h-4"></i>Decision Matrix</a>
+        <a href="#readout" class="navlink flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap" style="color:var(--sidebar-text)"><i data-lucide="layout-grid" class="w-4 h-4"></i>Read-Out</a>
+        <a href="#roadmap" class="navlink flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap" style="color:var(--sidebar-text)"><i data-lucide="calendar-check" class="w-4 h-4"></i>12-Month Roadmap</a>
+      </nav>
+    </div>
+    <div class="mt-8 md:mt-0">
+      <div class="rounded-lg p-4" style="background:var(--sidebar-bg-alt)">
+        <div class="flex items-center gap-2 text-xs font-semibold" style="color:var(--sidebar-text)"><i data-lucide="users" class="w-4 h-4" style="color:var(--accent)"></i>3 Founders · 18mo Runway</div>
+        <div class="text-[11px] mt-1" style="color:var(--sidebar-text-dim)">Pre-seed · India-first</div>
+      </div>
+      <button onclick="resetAll()" class="mt-3 w-full flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg border" style="color:var(--sidebar-text-dim); border-color:#3A2C1F"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Reset to defaults</button>
+    </div>
+  </aside>
+
+  <main class="flex-1 px-4 sm:px-8 py-8 space-y-8 max-w-6xl mx-auto w-full">
+
+    <section id="overview" class="rounded-xl p-6 sm:p-8 text-white" style="background:linear-gradient(135deg,var(--sidebar-bg),var(--sidebar-bg-alt))">
+      <div class="text-xs mono uppercase tracking-wide" style="color:var(--accent-soft)">Executive Posture</div>
+      <h1 id="bannerTitle" class="text-2xl sm:text-3xl font-extrabold mt-1"></h1>
+      <p id="bannerSub" class="text-sm mt-2 max-w-2xl" style="color:var(--sidebar-text-dim)"></p>
+      <div id="bannerBars" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-7"></div>
+    </section>
+
+    <section id="macro" class="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-6">
+      <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-5 h-5" style="color:var(--accent)"></i>Macro Constraints</h2>
+      <p class="text-sm text-[var(--text-secondary)] mb-5">These financial inputs can automatically override matrix scores — see active badges below.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div>
+          <label class="text-xs font-medium text-[var(--text-secondary)] flex items-center gap-1"><i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5"></i>Annual Revenue</label>
+          <input type="number" id="revenue" value="1200000" step="10000" oninput="setMacro('revenue', this.value)" class="mt-1 w-full border border-[var(--border)] rounded-lg px-3 py-2 mono text-sm focus:outline-none focus:border-[var(--accent)]">
+          <div id="revenueLabel" class="text-xs mono text-[var(--text-secondary)] mt-1">$1,200,000</div>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-[var(--text-secondary)] flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Monthly Active Users</label>
+          <input type="number" id="mau" value="68000" step="1000" oninput="setMacro('mau', this.value)" class="mt-1 w-full border border-[var(--border)] rounded-lg px-3 py-2 mono text-sm focus:outline-none focus:border-[var(--accent)]">
+          <div id="mauLabel" class="text-xs mono text-[var(--text-secondary)] mt-1">68,000 users</div>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-[var(--text-secondary)] flex items-center justify-between"><span class="flex items-center gap-1"><i data-lucide="scale" class="w-3.5 h-3.5"></i>Debt Ratio</span><span id="debtRatioLabel" class="mono">0.28</span></label>
+          <input type="range" id="debtRatio" min="0" max="1" step="0.01" value="0.28" oninput="setMacro('debtRatio', this.value)" class="mt-3 w-full accent-[var(--accent)]">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-[var(--text-secondary)] flex items-center justify-between"><span class="flex items-center gap-1"><i data-lucide="percent" class="w-3.5 h-3.5"></i>Profit Margin</span><span id="marginLabel" class="mono">6%</span></label>
+          <input type="range" id="margin" min="-30" max="60" step="1" value="6" oninput="setMacro('margin', this.value)" class="mt-3 w-full accent-[var(--accent)]">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-[var(--text-secondary)] flex items-center justify-between"><span class="flex items-center gap-1"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i>YoY Growth</span><span id="growthLabel" class="mono">65%</span></label>
+          <input type="range" id="growth" min="0" max="200" step="1" value="65" oninput="setMacro('growth', this.value)" class="mt-3 w-full accent-[var(--accent)]">
+        </div>
+      </div>
+      <div id="overrideBadges" class="mt-5 pt-5 border-t border-[var(--border)]"></div>
+    </section>
+
+    <section id="matrix" class="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="grid-3x3" class="w-5 h-5" style="color:var(--accent)"></i>Decision Matrix</h2>
+          <p class="text-sm text-[var(--text-secondary)]">Rate each component 1–5 per criterion. Drag weights to reflect what matters to MochaTrade.</p>
+        </div>
+        <span id="weightTotal" class="mono text-xs px-3 py-1.5 rounded-full border"></span>
+      </div>
+      <div class="overflow-x-auto mt-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left border-b-2 border-[var(--border)]">
+              <th class="p-3 sticky left-0 bg-[var(--bg-card)] min-w-[220px] text-xs uppercase tracking-wide text-[var(--text-secondary)]">Criterion / Weight</th>
+              <th class="p-3 text-xs font-semibold min-w-[130px]"><span class="inline-flex items-center gap-1.5"><i data-lucide="line-chart" class="w-3.5 h-3.5" style="color:var(--accent)"></i>Trading Engine</span></th>
+              <th class="p-3 text-xs font-semibold min-w-[130px]"><span class="inline-flex items-center gap-1.5"><i data-lucide="wallet" class="w-3.5 h-3.5" style="color:var(--accent)"></i>Wallet Orch.</span></th>
+              <th class="p-3 text-xs font-semibold min-w-[130px]"><span class="inline-flex items-center gap-1.5"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5" style="color:var(--accent)"></i>UPI Rails</span></th>
+              <th class="p-3 text-xs font-semibold min-w-[130px]"><span class="inline-flex items-center gap-1.5"><i data-lucide="fingerprint" class="w-3.5 h-3.5" style="color:var(--accent)"></i>KYC / AML</span></th>
+            </tr>
+          </thead>
+          <tbody id="matrixBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="readout">
+      <h2 class="text-lg font-bold flex items-center gap-2 mb-1"><i data-lucide="layout-grid" class="w-5 h-5" style="color:var(--accent)"></i>Verdict Read-Out</h2>
+      <p class="text-sm text-[var(--text-secondary)] mb-4">Final call per component, generated live from the matrix and macro overrides.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="readoutGrid"></div>
+    </section>
+
+    <section id="roadmap">
+      <h2 class="text-lg font-bold flex items-center gap-2 mb-1"><i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--accent)"></i>12-Month Delivery Roadmap</h2>
+      <p class="text-sm text-[var(--text-secondary)] mb-4">A consultant-style execution plan, sequenced from the same scores and macro constraints above — re-sequences live as you adjust them.</p>
+      <div id="roadmapStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"></div>
+      <div id="roadmapQuarters" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+      <div id="roadmapCallout" class="mt-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5"></div>
+    </section>
+
+  </main>
+
+<script>
+const CRITERIA=[
+  {key:'M',label:'Strategic Moat',desc:'Defensible IP or differentiation this component creates.',invert:false},
+  {key:'C',label:'Control & UX',desc:'Ownership of experience, latency, and roadmap.',invert:false},
+  {key:'R',label:'Regulatory Burden',desc:'Licensing/compliance weight (RBI, NPCI, SEBI).',invert:true},
+  {key:'T',label:'Time to Market',desc:'Delay of building vs. integrating (5 = big delay).',invert:true},
+  {key:'TCO',label:'CapEx & TCO',desc:'Capital and ongoing cost intensity (5 = expensive).',invert:true},
+];
+const COMPONENTS=[
+  {key:'trading',label:'Trading Engine',icon:'line-chart'},
+  {key:'wallet',label:'Wallet Orchestration',icon:'wallet'},
+  {key:'upi',label:'UPI Rails',icon:'arrow-left-right'},
+  {key:'kyc',label:'KYC / AML',icon:'fingerprint'},
+];
+const DEFAULT_WEIGHTS={M:30,C:25,R:18,T:15,TCO:12};
+const DEFAULT_RATINGS={
+  trading:{M:5,C:5,R:2,T:2,TCO:2},
+  wallet:{M:3,C:4,R:3,T:3,TCO:3},
+  upi:{M:1,C:2,R:4,T:4,TCO:3},
+  kyc:{M:1,C:1,R:5,T:3,TCO:2},
+};
+const DEFAULT_MACRO={revenue:1200000,mau:68000,debtRatio:0.28,margin:6,growth:65};
+
+let weights=JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
+let ratings=JSON.parse(JSON.stringify(DEFAULT_RATINGS));
+let macro=JSON.parse(JSON.stringify(DEFAULT_MACRO));
+
+function getOverrides(){
+  return{
+    TCO: macro.debtRatio>0.4 || macro.margin<0,
+    T: macro.growth>50 || macro.mau>100000,
+    R: macro.revenue>5000000,
+  };
+}
+function computeScore(compKey, ov){
+  const r=ratings[compKey];
+  let num=0, den=0;
+  CRITERIA.forEach(c=>{
+    const raw = ov[c.key] ? 5 : r[c.key];
+    const contrib = c.invert ? (6-raw) : raw;
+    num += weights[c.key]*contrib;
+    den += weights[c.key];
+  });
+  return den>0 ? num/den : 0;
+}
+function getVerdict(score){
+  if(score>=3.75) return 'BUILD';
+  if(score>=2.50) return 'HYBRID';
+  return 'PARTNER';
+}
+function getVendor(compKey, verdict){
+  const {revenue,growth,mau}=macro;
+  if(compKey==='trading'){
+    if(verdict==='BUILD') return {name:'Internal High-Frequency Engine', note:'Full control of matching logic and latency — the core moat.',
+      reason:`Moat and control weights dominate the score, and trading logic is your core differentiator — owning it end-to-end protects that edge as volume compounds.`};
+    if(verdict==='HYBRID'){
+      if(revenue>5000000) return {name:'Internal Core + AlphaPoint', note:'In-house book, white-label engine for overflow volume.',
+        reason:`Revenue has crossed $${(revenue/1000000).toFixed(1)}M, pulling regulatory weight into the score. Keeping the order book in-house preserves the moat while AlphaPoint absorbs overflow volume without new build cost.`};
+      if(growth>50) return {name:'Internal Core + Orderly Network', note:'In-house book, shared on-chain liquidity for growth spikes.',
+        reason:`YoY growth at ${growth}% trips the time-to-market threshold. The in-house book stays as the moat while Orderly Network's shared liquidity covers spikes without a new engineering cycle.`};
+      return {name:'Internal Core + Hyperliquid', note:'In-house book, on-chain liquidity while volume is thin.',
+        reason:`No macro override is active, so the score reflects a genuine build/partner split. In-house core plus Hyperliquid balances ownership with capital efficiency while volume is still thin.`};
+    }
+    if(revenue>5000000) return {name:'AlphaPoint', note:'Enterprise white-label exchange tech for revenue-scale desks.',
+      reason:`Revenue past $5M pulls in regulatory weight that AlphaPoint is purpose-built to absorb — enterprise white-label tech sized for regulated, revenue-scale desks.`};
+    if(growth>50) return {name:'Orderly Network', note:'Shared on-chain orderbook, fast to integrate during rapid growth.',
+      reason:`${growth}% YoY growth trips the time-to-market override, so shipping fast beats owning the book. Orderly Network's shared orderbook integrates in days, not months.`};
+    return {name:'Hyperliquid', note:'Deep on-chain liquidity, minimal lift for early-stage volume.',
+      reason:`Macro constraints are balanced right now, so capital efficiency wins. Hyperliquid gives deep on-chain liquidity with minimal engineering lift while MAU is still ${mau.toLocaleString('en-US')}.`};
+  }
+  if(compKey==='wallet'){
+    if(verdict==='BUILD') return {name:'Internal HSM & MPC', note:'Full custody ownership — defensible but capital-intensive.',
+      reason:`Custody is core IP for a trading platform, so in-house HSM/MPC keeps full control — the most capital-intensive path on the matrix, but the most defensible one.`};
+    if(revenue>5000000) return {name:'Fireblocks', note:'Institutional custody & MPC, built for regulated scale.',
+      reason:`Revenue past $5M brings institutional-grade compliance expectations. Fireblocks is purpose-built MPC custody for regulated scale, so you're not carrying that build yourself.`};
+    if(growth>50) return {name:'Turnkey', note:'Programmable wallet infra suited to fast-growing user bases.',
+      reason:`${growth}% YoY growth means wallet volume keeps climbing fast. Turnkey's programmable wallet infra is designed to scale with exactly that curve.`};
+    return {name:'Privy', note:'Lightweight embedded wallets, ideal for a lean pre-seed build.',
+      reason:`With growth and revenue still below the override thresholds, a lean embedded wallet fits the pre-seed stage. Privy keeps custody simple without over-building for volume you don't have yet.`};
+  }
+  if(compKey==='upi'){
+    if(verdict==='BUILD') return {name:'Internal NPCI-Certified Rails', note:'Direct NPCI membership — max control, max regulatory lift.',
+      reason:`UPI is the most regulation-heavy criterion on the matrix. Direct NPCI membership gives max control over the switch, at the cost of the heaviest compliance lift.`};
+    if(verdict==='HYBRID'){
+      if(growth>50) return {name:'Internal Switch + Decentro', note:'Own the switch, route overflow through Decentro.',
+        reason:`${growth}% YoY growth trips the time-to-market override. Owning the switch protects the roadmap while Decentro absorbs overflow volume without a new integration each time you scale.`};
+      if(mau>50000) return {name:'Internal Switch + Cashfree', note:'Own the switch, route overflow through Cashfree.',
+        reason:`MAU has crossed 50,000, so throughput matters more than raw cost. Owning the switch plus Cashfree's proven payout/collect rails covers the overflow reliably.`};
+      return {name:'Internal Switch + Razorpay', note:'Own the switch, route overflow through Razorpay.',
+        reason:`No macro override is active, reflecting a genuine build/partner split. Owning the switch while routing through Razorpay keeps optionality without full NPCI membership yet.`};
+    }
+    if(growth>50) return {name:'Decentro', note:'Unified API layer built for high-growth UPI volume.',
+      reason:`${growth}% YoY growth pushes speed above control. Decentro's unified API layer is built for exactly this kind of high-growth UPI volume.`};
+    if(mau>50000) return {name:'Cashfree', note:'Proven UPI payout/collect rails at meaningful MAU scale.',
+      reason:`At ${mau.toLocaleString('en-US')} MAU, Cashfree's rails are proven at this scale without the regulatory lift of direct NPCI membership.`};
+    return {name:'Razorpay', note:'Fastest path to a compliant UPI integration for early traction.',
+      reason:`Growth and MAU are both under threshold, so the fastest compliant path wins. Razorpay gets UPI live quickest for early traction.`};
+  }
+  if(verdict==='BUILD') return {name:'Internal Compliance Stack', note:'Full ownership of AML logic — defensible, capital-intensive.',
+    reason:`KYC/AML carries the heaviest regulatory weight on the matrix. Owning the compliance stack directly is the only way to fully control audit risk.`};
+  if(verdict==='HYBRID'){
+    if(mau>100000) return {name:'Internal Review + HyperVerge', note:'Own edge cases, automate bulk onboarding via HyperVerge.',
+      reason:`MAU has crossed 100,000, making onboarding throughput the bottleneck. In-house review for edge cases plus HyperVerge's automation covers volume without losing judgment control.`};
+    if(growth>50) return {name:'Internal Review + Sumsub', note:'Own edge cases, automate bulk onboarding via Sumsub.',
+      reason:`${growth}% YoY growth trips the speed override. In-house review for edge cases plus Sumsub's automation lets onboarding scale without a full compliance build.`};
+    return {name:'Internal Review + IDfy', note:'Own edge cases, automate bulk onboarding via IDfy.',
+      reason:`No macro override is currently active. In-house review plus IDfy's automation is the balanced call while volume is still moderate.`};
+  }
+  if(mau>100000) return {name:'HyperVerge', note:'AI-led KYC built for high-MAU onboarding throughput.',
+    reason:`At ${mau.toLocaleString('en-US')} MAU, HyperVerge's AI-led KYC is built for exactly this onboarding throughput.`};
+  if(growth>50) return {name:'Sumsub', note:'Global compliance stack that scales with rapid growth.',
+    reason:`${growth}% YoY growth trips the speed threshold — Sumsub's global compliance stack scales with the curve without slowing onboarding.`};
+  return {name:'IDfy', note:'India-specific KYC/AML coverage, quick to stand up pre-seed.',
+    reason:`Growth and MAU are both under threshold, so the fastest India-specific path wins. IDfy stands up KYC/AML quickly for pre-seed volume.`};
+}
+function posture(build,hybrid,partner){
+  if(partner>=3) return {title:'Preserve Runway: Outsource Commodity Infra', sub:`${partner} of 4 components favor partnership — capital stays on differentiation while the 18-month runway absorbs less build risk.`};
+  if(build>=3) return {title:'Concentrate Capital: Build the Core', sub:`${build} of 4 components clear the build threshold — worth the engineering hours against a ${macro.growth}% growth curve.`};
+  return {title:'Hybrid Posture: Build the Moat, Rent the Rails', sub:'Scores split across build, hybrid and partner — own what is defensible, integrate what is commodity.'};
+}
+function verdictColor(v){ return v==='BUILD'?'var(--build)':v==='HYBRID'?'var(--hybrid)':'var(--partner)'; }
+function verdictSoft(v){ return v==='BUILD'?'var(--build-soft)':v==='HYBRID'?'var(--hybrid-soft)':'var(--partner-soft)'; }
+
+// ---- 12-month roadmap ----
+const PHASE_COPY={
+  BUILD:['Define & staff','Build the core','Harden & launch','Scale the moat'],
+  HYBRID:['Design the split','Integrate','Pilot','Optimize'],
+  PARTNER:['Select partner','Connect','Launch','Review SLA'],
+};
+const QUARTER_GATES=[
+  'Gate: owners, contracts, and architecture approved.',
+  'Gate: production readiness and risk review passed.',
+  'Gate: SLA, reliability, and adoption targets met.',
+  'Gate: re-score the matrix with actual operating data.',
+];
+
+// Deep, quarter-by-quarter execution analysis per component. BUILD gets the fullest
+// treatment (it carries the most execution risk); HYBRID/PARTNER stay vendor-centric.
+function tradingPlaybook(verdict, q, vendor){
+  const {growth, mau} = macro;
+  if(verdict==='BUILD') return [
+    `Hire one to two quant/trading engineers and lock the matching-engine architecture — order book, matching algorithm, and risk checks — before a line of production code is written. Stand up a paper-trading environment against real market data to validate logic early. This is the highest-cost, highest-risk quarter on the whole roadmap, so scope it tightly against the 18-month runway rather than letting it drift.`,
+    `Ship the core matching engine into a sandboxed environment and connect it to a real liquidity source. Load-test at three to five times current volume (${mau.toLocaleString('en-US')} MAU today) to surface scaling issues before go-live, not after. Keep a partner venue on standby as a fallback execution path in case the internal timeline slips.`,
+    `Move to a phased production rollout under strict position and notional limits while the engine proves itself with real capital. Run a full resilience audit — failover, circuit breakers, reconciliation — before those limits come off. Every clean week of uptime here becomes a concrete data point for the next fundraise conversation.`,
+    `Shift resourcing from build to defensibility: proprietary order types, smarter routing, and lower latency become the moat a competitor can't copy overnight. Re-run this matrix with real uptime and cost data in hand — at ${growth}% YoY growth, this is the quarter to weigh a second engineer against a second vendor, not before.`,
+  ][q];
+  if(verdict==='HYBRID') return [
+    `Decide which parts of order flow stay in-house (the core book, for control) versus what routes to ${vendor.name} (overflow and burst capacity). Sign the integration agreement and pin down settlement and reconciliation ownership between the two systems before building anything.`,
+    `Build the internal core book and complete the ${vendor.name} integration in parallel — API connectivity, order-routing rules, and failover logic between the two paths, tested independently before they're wired together.`,
+    `Pilot the hybrid routing live with capped volume: internal book first, ${vendor.name} absorbing overflow above a defined threshold. Track latency and fill quality across both paths before raising the cap.`,
+    `Review the split honestly — how much volume is actually landing on ${vendor.name} versus internally. At ${growth}% YoY growth, if overflow keeps outgrowing the core book, that's the signal to scale the internal engine; if it doesn't, keep leaning on the partner.`,
+  ][q];
+  return [
+    `Select and contract with ${vendor.name}, pinning down latency, uptime SLA, and settlement terms in writing before any integration work starts.`,
+    `Integrate ${vendor.name}'s execution API end-to-end and run it in staging against real order flow patterns before it ever touches live capital.`,
+    `Launch live with ${vendor.name} behind a capped volume pilot, with a monitoring dashboard tracking fill quality, latency, and downtime from day one.`,
+    `Review the SLA against actual performance and cost at current volume, then re-score this component next cycle — if revenue crosses $5M or growth keeps compounding, the build case only gets stronger.`,
+  ][q];
+}
+function walletPlaybook(verdict, q, vendor){
+  const {mau, debtRatio, margin} = macro;
+  if(verdict==='BUILD') return [
+    `Scope the full custody architecture — key generation, MPC/HSM signing flow, and recovery procedures — before any code is written. This is the one component where a post-launch rework isn't a refactor, it's a security incident. Engage a custody-focused security auditor now so the review isn't a surprise in Q3.`,
+    `Build the signing and key-management core in an isolated environment and test it against a testnet before it ever touches real funds. Document every operational runbook — key rotation, incident response, cold-storage procedures — as you build; this becomes real due-diligence collateral for the next raise.`,
+    `Complete a third-party security audit and penetration test before moving any meaningful balance on-chain. Launch with strict withdrawal limits and a multi-sig break-glass process, and only lift those limits once the audit is formally signed off.`,
+    `Custody differentiation compounds through operational trust, not new features — track uptime, incident count, and audit cadence as the core KPIs. If debt ratio (${debtRatio.toFixed(2)}) or margin (${margin}%) cross the override thresholds next quarter, revisit whether owning custody still earns its keep against its TCO.`,
+  ][q];
+  if(verdict==='HYBRID') return [
+    `Decide which wallet functions stay internal (policy, limits, user-facing controls) versus what ${vendor.name} handles (key infrastructure, signing). Finalize the integration contract and data-residency terms before building on top of it.`,
+    `Integrate ${vendor.name}'s wallet infrastructure while building the internal policy and control layer — approval limits, spend rules, and audit logging stay in-house on top of their signing stack.`,
+    `Pilot live with a capped user cohort, watching transaction success rate and signing latency through ${vendor.name} closely before expanding to full volume.`,
+    `Review cost-per-wallet and incident history with ${vendor.name}. At ${mau.toLocaleString('en-US')} MAU, decide whether growing volume justifies bringing key infrastructure in-house or staying hybrid.`,
+  ][q];
+  return [
+    `Select and contract with ${vendor.name}, confirming custody model, compliance certifications, and incident-response SLAs before any integration begins.`,
+    `Integrate ${vendor.name}'s wallet SDK/API and build the user-facing controls — limits, approvals — your product needs on top of it.`,
+    `Launch live with a monitored, staged rollout, tracking transaction success rate, latency, and support response time against the signed SLA.`,
+    `Review vendor cost and reliability at current MAU (${mau.toLocaleString('en-US')}). Re-score next cycle — rising revenue or growth may tip the balance toward bringing custody in-house.`,
+  ][q];
+}
+function upiPlaybook(verdict, q, vendor){
+  const {growth, mau} = macro;
+  if(verdict==='BUILD') return [
+    `Begin the NPCI TPAP application immediately — it typically has the longest lead time on the entire roadmap and gates everything downstream, so start it in parallel with engineering, not after it. Identify a sponsor bank and confirm settlement architecture before committing further engineering time.`,
+    `Build the switch and settlement reconciliation logic while the NPCI application sits in review. Keep a partner rail live in production in the meantime so the business isn't blocked waiting on certification.`,
+    `Once certified, run the internal switch in shadow mode alongside the partner rail, reconciling transaction-for-transaction before a single rupee of live traffic cuts over.`,
+    `Cut over incrementally by user cohort, keeping the partner rail as a live fallback for at least one full quarter. UPI rails are commodity infrastructure for most fintechs — at ${growth}% YoY growth, keep building only because the switch is a genuine cost or control advantage, not by default.`,
+  ][q];
+  if(verdict==='HYBRID') return [
+    `Confirm which flows stay on the internal switch versus route through ${vendor.name}. Sign the partner agreement and define the overflow threshold that triggers routing between the two.`,
+    `Build the internal switch's core settlement logic while finalizing the ${vendor.name} integration for overflow and backup routing in parallel.`,
+    `Pilot both paths live with capped volume, watching success rate and settlement time on each side before raising the limits.`,
+    `Review the actual volume split between the internal switch and ${vendor.name}. At ${mau.toLocaleString('en-US')} MAU, decide whether to keep growing the internal share or lean further into the partner rail.`,
+  ][q];
+  return [
+    `Select and contract with ${vendor.name}, confirming settlement SLAs, transaction limits, and dispute-resolution terms up front.`,
+    `Integrate ${vendor.name}'s UPI API end-to-end and test settlement reconciliation against real bank statements in staging before go-live.`,
+    `Launch live with a monitored rollout, tracking success rate, settlement time, and downtime against the signed SLA.`,
+    `Review cost-per-transaction and reliability at current volume. Re-score next cycle — if MAU or growth keep compounding, revisit whether an internal switch finally becomes worthwhile.`,
+  ][q];
+}
+function kycPlaybook(verdict, q, vendor){
+  const {growth, mau} = macro;
+  if(verdict==='BUILD') return [
+    `Define the compliance policy first — RBI/PMLA requirements, risk-scoring rules, and escalation paths — before building any onboarding flow around it. Policy gaps here surface as regulatory findings later, not as bugs you can quietly patch.`,
+    `Build the video-KYC and document-verification pipeline, and pressure-test it against edge cases — low-quality documents, name mismatches, OCR failures — rather than just the happy path.`,
+    `Run a compliance audit against RBI KYC master directions before scaling onboarding volume, and keep a vendor on hand as a manual-review backstop for edge cases the automated pipeline can't resolve confidently.`,
+    `Track false-positive and false-negative rates plus onboarding time as the core KPIs. At ${mau.toLocaleString('en-US')} MAU, throughput becomes the binding constraint, not accuracy — plan next quarter's engineering investment around that, not around further tuning accuracy alone.`,
+  ][q];
+  if(verdict==='HYBRID') return [
+    `Define which onboarding decisions stay with internal review (edge cases, appeals) versus what ${vendor.name} automates (bulk verification). Sign the integration and data-handling agreement before building the review workflow.`,
+    `Integrate ${vendor.name}'s verification API and build the internal review queue and escalation workflow on top of it.`,
+    `Pilot with a capped cohort, tracking the automated pass-through rate and internal review turnaround time before scaling volume further.`,
+    `Review the automation rate actually achieved with ${vendor.name}. At ${growth}% YoY growth, decide whether to raise the automation threshold or keep more onboarding under internal review.`,
+  ][q];
+  return [
+    `Select and contract with ${vendor.name}, confirming turnaround time, accuracy guarantees, and data-residency compliance before integration begins.`,
+    `Integrate ${vendor.name}'s KYC API end-to-end and test it against real (anonymized) applicant data in staging before go-live.`,
+    `Launch live with monitored onboarding, tracking pass-through rate, turnaround time, and manual-review escalations against the SLA.`,
+    `Review vendor accuracy and cost at current volume. Re-score next cycle — if MAU crosses 100,000, throughput needs may justify deeper automation or an internal review layer.`,
+  ][q];
+}
+function getQuarterAnalysis(compKey, verdict, q, vendor){
+  if(compKey==='trading') return tradingPlaybook(verdict, q, vendor);
+  if(compKey==='wallet') return walletPlaybook(verdict, q, vendor);
+  if(compKey==='upi') return upiPlaybook(verdict, q, vendor);
+  return kycPlaybook(verdict, q, vendor);
+}
+
+function renderRoadmap(resultsArr, ov){
+  const ordered=resultsArr.slice().sort((a,b)=>b.score-a.score);
+  const buildCount=resultsArr.filter(r=>r.verdict==='BUILD').length;
+  const hybridCount=resultsArr.filter(r=>r.verdict==='HYBRID').length;
+  const partnerCount=resultsArr.filter(r=>r.verdict==='PARTNER').length;
+  const dominant=CRITERIA.slice().sort((a,b)=>weights[b.key]-weights[a.key])[0];
+  const budgetPressure=ov.TCO, speedPressure=ov.T;
+  const activeLabels=CRITERIA.filter(c=>ov[c.key]).map(c=>c.label);
+
+  document.getElementById('roadmapStats').innerHTML=`
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5"><i data-lucide="building-2" class="w-3.5 h-3.5"></i>Annual posture</div>
+      <div class="mono text-sm font-semibold mt-1.5">${buildCount} build · ${hybridCount} hybrid · ${partnerCount} partner</div>
+    </div>
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5"></i>Primary decision lens</div>
+      <div class="mono text-sm font-semibold mt-1.5">${dominant.label} · ${weights[dominant.key]}%</div>
+    </div>
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5"><i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5"></i>Macro snapshot</div>
+      <div class="mono text-xs font-semibold mt-1.5 leading-relaxed">$${macro.revenue.toLocaleString('en-US')} rev · ${macro.mau.toLocaleString('en-US')} MAU<br>${macro.debtRatio.toFixed(2)} debt · ${macro.margin}% margin · ${macro.growth}% growth</div>
+    </div>
+    <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div class="text-xs text-[var(--text-secondary)] flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5"></i>Plan pressure</div>
+      <div class="mono text-sm font-semibold mt-1.5">${activeLabels.length?activeLabels.join(', '):'Balanced baseline'}</div>
+    </div>`;
+
+  document.getElementById('roadmapQuarters').innerHTML=[0,1,2,3].map(i=>{
+    const theme = i===0 ? (speedPressure?'Fast-track foundations':'Commit the portfolio')
+                : i===1 ? 'Build and integrate'
+                : i===2 ? 'Launch with control'
+                : 'Scale and reassess';
+    const note = (i===0 && budgetPressure) ? 'Capital pressure is active: contract and validate value before committing to fixed cost.'
+               : (i===0 && speedPressure) ? `Growth pressure is active: at ${macro.growth}% YoY growth, front-load external dependencies and shorten decision windows.`
+               : (i===3) ? "Re-score the full matrix with actual operating data before locking next year's plan."
+               : 'Advance each workstream against its current build, hybrid, or partner posture.';
+    const items=ordered.map(r=>{
+      const owner = r.verdict==='BUILD' ? 'Product + engineering' : r.vendor.name;
+      const analysis = getQuarterAnalysis(r.component, r.verdict, i, r.vendor);
+      const buildFlag = r.verdict==='BUILD' ? `<span class="mono text-[9px] font-bold px-1.5 py-0.5 rounded" style="background:var(--build-soft);color:var(--build)">HIGH FOCUS</span>` : '';
+      return `<div class="py-3 border-t border-[var(--border)] first:border-t-0 first:pt-0">
+        <div class="flex items-start gap-2">
+          <i data-lucide="${r.icon}" class="w-3.5 h-3.5 mt-0.5 shrink-0" style="color:var(--accent)"></i>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold flex items-center gap-1.5 flex-wrap">${r.label}
+              <span class="mono text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background:${verdictSoft(r.verdict)};color:${verdictColor(r.verdict)}">${r.verdict}</span>
+              ${buildFlag}
+            </div>
+            <div class="flex items-center gap-1.5 mt-1 text-[11px]" style="color:var(--text-secondary)">
+              <span class="mono font-semibold px-1.5 py-0.5 rounded border" style="border-color:var(--border)">${PHASE_COPY[r.verdict][i]}</span>
+              <span>· ${owner}</span>
+            </div>
+            <p class="text-xs mt-1.5 leading-relaxed" style="color:var(--text-secondary)">${analysis}</p>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+      <div class="flex items-center gap-3">
+        <span class="mono text-xs font-bold px-2.5 py-1 rounded-full border" style="border-color:var(--accent);color:var(--accent)">Q${i+1}</span>
+        <div><div class="font-bold text-sm">${theme}</div><div class="text-xs text-[var(--text-secondary)]">Months ${i*3+1}–${i*3+3}</div></div>
+      </div>
+      <p class="text-xs text-[var(--text-secondary)] mt-3">${note}</p>
+      <div class="mt-2">${items}</div>
+      <p class="text-xs mono mt-3 pt-3 border-t border-[var(--border)]" style="color:var(--accent)">${QUARTER_GATES[i]}</p>
+    </div>`;
+  }).join('');
+
+  document.getElementById('roadmapCallout').innerHTML=`
+    <div class="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5"><i data-lucide="zap" class="w-3.5 h-3.5" style="color:var(--accent)"></i>What moves this roadmap</div>
+    <p class="text-sm text-[var(--text-secondary)]">Change any macro constraint, weight, or rating and this plan re-sequences instantly. Capital pressure (debt ratio above 0.4 or negative margin) forces CapEx discipline; growth above 50% or 100,000 MAU forces speed; revenue above $5M forces regulatory rigor. Components tagged <span class="mono font-semibold" style="color:var(--build)">HIGH FOCUS</span> are BUILD calls — they carry the most execution risk on this roadmap and deserve the founders' direct attention each quarter, not just engineering headcount.</p>`;
+}
+
+function renderMatrix(){
+  const ov=getOverrides();
+  const tbody=document.getElementById('matrixBody');
+  tbody.innerHTML = CRITERIA.map(crit=>{
+    const locked = ov[crit.key]===true;
+    const cells = COMPONENTS.map(comp=>{
+      const val=ratings[comp.key][crit.key];
+      const btns=[1,2,3,4,5].map(i=>{
+        const isActive = locked ? i===5 : i===val;
+        return `<button ${locked?'disabled':''} onclick="setRating('${comp.key}','${crit.key}',${i})" class="rate-btn${isActive?' active':''}${locked?' locked':''}">${i}</button>`;
+      }).join('');
+      return `<td class="p-3"><div class="flex gap-1 justify-center">${btns}</div></td>`;
+    }).join('');
+    return `<tr class="border-b border-[var(--border)]">
+      <td class="p-3 align-top sticky left-0 bg-[var(--bg-card)] min-w-[220px]">
+        <div class="font-semibold text-sm flex items-center gap-1.5">${crit.label}${locked?'<i data-lucide="lock" class="w-3.5 h-3.5" style="color:var(--hybrid)" title="Overridden by macro inputs"></i>':''}</div>
+        <div class="text-xs text-[var(--text-secondary)] mt-0.5 max-w-[200px]">${crit.desc}</div>
+        <div class="flex items-center gap-2 mt-2.5">
+          <input type="range" min="0" max="50" value="${weights[crit.key]}" oninput="setWeight('${crit.key}', this.value)" class="w-24 accent-[var(--accent)]">
+          <span id="wlabel-${crit.key}" class="mono text-xs w-9">${weights[crit.key]}%</span>
+        </div>
+      </td>${cells}
+    </tr>`;
+  }).join('');
+}
+function updateScoresOnly(){
+  const ov=getOverrides();
+  const results={};
+  COMPONENTS.forEach(c=>{
+    const score=computeScore(c.key, ov);
+    const verdict=getVerdict(score);
+    results[c.key]={score, verdict, vendor:getVendor(c.key, verdict)};
+  });
+  document.getElementById('readoutGrid').innerHTML = COMPONENTS.map(c=>{
+    const r=results[c.key];
+    return `<div class="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5" style="border-top:3px solid ${verdictColor(r.verdict)}">
+      <div class="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"><i data-lucide="${c.icon}" class="w-4 h-4"></i>${c.label}</div>
+      <div class="mt-3 mono text-3xl font-semibold" style="color:${verdictColor(r.verdict)}">${r.score.toFixed(2)}</div>
+      <span class="inline-block mt-2 mono text-xs font-semibold px-2.5 py-1 rounded-full" style="background:${verdictSoft(r.verdict)};color:${verdictColor(r.verdict)}">${r.verdict}</span>
+      <div class="mt-4 pt-4 border-t border-[var(--border)]">
+        <div class="text-xs text-[var(--text-secondary)] mb-1">Selected partner</div>
+        <div class="font-semibold text-sm">${r.vendor.name}</div>
+        <div class="text-xs text-[var(--text-secondary)] mt-1">${r.vendor.note}</div>
+        <div class="text-xs text-[var(--text-secondary)] mt-2 pt-2 border-t border-dashed border-[var(--border)] leading-relaxed">${r.vendor.reason}</div>
+      </div>
+    </div>`;
+  }).join('');
+  let build=0,hybrid=0,partner=0;
+  COMPONENTS.forEach(c=>{ const v=results[c.key].verdict; if(v==='BUILD')build++; else if(v==='HYBRID')hybrid++; else partner++; });
+  const p=posture(build,hybrid,partner);
+  document.getElementById('bannerTitle').textContent=p.title;
+  document.getElementById('bannerSub').textContent=p.sub;
+  document.getElementById('bannerBars').innerHTML = COMPONENTS.map(c=>{
+    const r=results[c.key];
+    const pct=Math.max(0,Math.min(100, r.score/5*100));
+    return `<div>
+      <div class="flex justify-between text-xs mb-1"><span class="font-medium">${c.label}</span><span class="mono">${r.score.toFixed(2)}</span></div>
+      <div class="h-2 rounded-full overflow-hidden" style="background:rgba(255,255,255,.15)"><div class="h-full rounded-full" style="width:${pct}%;background:${verdictColor(r.verdict)}"></div></div>
+    </div>`;
+  }).join('');
+  const items=[];
+  if(ov.TCO) items.push({icon:'circle-dollar-sign',text:'TCO Penalty — Debt Ratio > 0.4 or Margin < 0%'});
+  if(ov.T) items.push({icon:'timer',text:'Time-to-Market Urgency — Growth > 50% or MAU > 100k'});
+  if(ov.R) items.push({icon:'landmark',text:'Regulatory Exposure — Revenue > $5M'});
+  const badgeEl=document.getElementById('overrideBadges');
+  badgeEl.innerHTML = items.length===0
+    ? '<span class="text-xs text-[var(--text-secondary)]">No macro overrides active — matrix scores are unmodified.</span>'
+    : items.map(i=>`<span class="inline-flex items-center gap-1.5 mono text-xs px-3 py-1.5 rounded-full border border-[var(--hybrid)] text-[var(--hybrid)] bg-[var(--hybrid-soft)] mr-2 mb-2"><i data-lucide="${i.icon}" class="w-3.5 h-3.5"></i>${i.text}</span>`).join('');
+  const total=CRITERIA.reduce((s,c)=>s+weights[c.key],0);
+  const wtEl=document.getElementById('weightTotal');
+  if(total===100){
+    wtEl.textContent='✓ 100% Allocated';
+    wtEl.className='mono text-xs px-3 py-1.5 rounded-full border border-[var(--build)] text-[var(--build)] bg-[var(--build-soft)]';
+  } else {
+    wtEl.textContent=total+'% Allocated · auto-normalizing';
+    wtEl.className='mono text-xs px-3 py-1.5 rounded-full border border-[var(--hybrid)] text-[var(--hybrid)] bg-[var(--hybrid-soft)]';
+  }
+  const resultsArr = COMPONENTS.map(c=>({component:c.key, label:c.label, icon:c.icon, score:results[c.key].score, verdict:results[c.key].verdict, vendor:results[c.key].vendor}));
+  renderRoadmap(resultsArr, ov);
+}
+function renderAll(){ renderMatrix(); updateScoresOnly(); if(window.lucide) lucide.createIcons(); }
+function setRating(compKey,critKey,val){ ratings[compKey][critKey]=val; renderAll(); }
+function setWeight(key,val){ weights[key]=parseInt(val,10); document.getElementById('wlabel-'+key).textContent=val+'%'; updateScoresOnly(); if(window.lucide) lucide.createIcons(); }
+function setMacro(field,val){
+  macro[field] = field==='revenue'||field==='mau' ? (parseInt(val,10)||0) : (parseFloat(val)||0);
+  if(field==='revenue') document.getElementById('revenueLabel').textContent='$'+macro.revenue.toLocaleString('en-US');
+  if(field==='mau') document.getElementById('mauLabel').textContent=macro.mau.toLocaleString('en-US')+' users';
+  if(field==='debtRatio') document.getElementById('debtRatioLabel').textContent=macro.debtRatio.toFixed(2);
+  if(field==='margin') document.getElementById('marginLabel').textContent=macro.margin+'%';
+  if(field==='growth') document.getElementById('growthLabel').textContent=macro.growth+'%';
+  renderAll();
+}
+function syncMacroInputs(){
+  document.getElementById('revenue').value=macro.revenue;
+  document.getElementById('mau').value=macro.mau;
+  document.getElementById('debtRatio').value=macro.debtRatio;
+  document.getElementById('margin').value=macro.margin;
+  document.getElementById('growth').value=macro.growth;
+  document.getElementById('revenueLabel').textContent='$'+macro.revenue.toLocaleString('en-US');
+  document.getElementById('mauLabel').textContent=macro.mau.toLocaleString('en-US')+' users';
+  document.getElementById('debtRatioLabel').textContent=macro.debtRatio.toFixed(2);
+  document.getElementById('marginLabel').textContent=macro.margin+'%';
+  document.getElementById('growthLabel').textContent=macro.growth+'%';
+}
+function resetAll(){
+  weights=JSON.parse(JSON.stringify(DEFAULT_WEIGHTS));
+  ratings=JSON.parse(JSON.stringify(DEFAULT_RATINGS));
+  macro=JSON.parse(JSON.stringify(DEFAULT_MACRO));
+  syncMacroInputs();
+  renderAll();
+}
+syncMacroInputs();
+renderAll();
+</script>
+</body>
+</html>
